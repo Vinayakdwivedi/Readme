@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmers' Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+        }
+        .hero-section {
+            background-image: url('https://images.unsplash.com/photo-1500595046743-ee5a8a800ec2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .card {
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: scale(1.05);
+        }
+        .map-container {
+            height: 200px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation Panel -->
+    <nav class="bg-green-600 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Farmers' Hub</h1>
+            <div class="space-x-4">
+                <a href="#home" class="hover:underline">Home</a>
+                <a href="#crop-prices" class="hover:underline">Crop Prices</a>
+                <a href="#news" class="hover:underline">News</a>
+                <a href="#marketplace" class="hover:underline">Marketplace</a>
+                <button class="bg-green-700 px-4 py-2 rounded hover:bg-green-800">Placeholder</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section">
+        <div class="text-center">
+            <h2 class="text-4xl font-bold mb-4">Empowering Farmers, Connecting Buyers</h2>
+            <p class="text-lg">Your one-stop platform for crop prices, news, and marketplace.</p>
+        </div>
+    </section>
+
+    <!-- Crop Prices Section -->
+    <section id="crop-prices" class="py-12 bg-white">
+        <div class="container mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">Crop Price Trends</h2>
+            <div class="flex justify-center">
+                <canvas id="cropPriceChart" width="800" height="400"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- News Section -->
+    <section id="news" class="py-12 bg-gray-100">
+        <div class="container mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">Latest Crop News</h2>
+            <div id="news-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- News cards will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Weather and Crop Suggestions Section -->
+    <section id="weather" class="py-12 bg-white">
+        <div class="container mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">Weather & Crop Suggestions</h2>
+            <div class="flex flex-col md:flex-row gap-8">
+                <div class="md:w-1/2">
+                    <h3 class="text-xl font-semibold mb-4">Current Weather</h3>
+                    <div id="weather-info" class="bg-gray-100 p-4 rounded">
+                        <!-- Weather data will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="md:w-1/2">
+                    <h3 class="text-xl font-semibold mb-4">Suggested Crops</h3>
+                    <div id="crop-suggestions" class="bg-gray-100 p-4 rounded">
+                        <!-- Crop suggestions will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Marketplace Section -->
+    <section id="marketplace" class="py-12 bg-gray-100">
+        <div class="container mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">Marketplace</h2>
+            <div class="flex flex-col md:flex-row gap-8">
+                <div class="md:w-1/4">
+                    <h3 class="text-xl font-semibold mb-4">Filters</h3>
+                    <div class="bg-white p-4 rounded shadow">
+                        <label for="crop-search" class="block mb-2">Search Crops:</label>
+                        <input type="text" id="crop-search" class="w-full p-2 border rounded mb-4" placeholder="e.g., Wheat">
+                        <label for="price-filter" class="block mb-2">Price Range:</label>
+                        <input type="range" id="price-filter" min="0" max="1000" value="1000" class="w-full mb-4">
+                        <p>Max Price: $<span id="price-value">1000</span></p>
+                    </div>
+                </div>
+                <div class="md:w-3/4">
+                    <div id="marketplace-items" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Marketplace items will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-green-600 text-white py-8">
+        <div class="container mx-auto">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Farmers' Hub</h3>
+                    <p>Connecting farmers and buyers for a sustainable future.</p>
+                </div>
+                <div class="mt-4 md:mt-0">
+                    <h3 class="text-xl font-bold mb-4">Location</h3>
+                    <div id="map" class="map-container"></div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Crop Price Chart
+        const ctx = document.getElementById('cropPriceChart').getContext('2d');
+        const cropPriceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [
+                    {
+                        label: 'Wheat ($/ton)',
+                        data: [200, 210, 205, 220, 215, 230],
+                        borderColor: '#4CAF50',
+                        fill: false
+                    },
+                    {
+                        label: 'Corn ($/ton)',
+                        data: [180, 185, 190, 195, 200, 210],
+                        borderColor: '#FFC107',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: false }
+                }
+            }
+        });
+
+        // Fetch Weather Data
+        async function fetchWeather() {
+            const apiKey = 'YOUR_OPENWEATHERMAP_API_KEY'; // Replace with your API key
+            const city = 'Delhi'; // Default city, can be dynamic
+            try {
+                const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`);
+                const weather = response.data;
+                document.getElementById('weather-info').innerHTML = `
+                    <p><strong>City:</strong> ${weather.name}</p>
+                    <p><strong>Temperature:</strong> ${weather.main.temp}°C</p>
+                    <p><strong>Condition:</strong> ${weather.weather[0].description}</p>
+                `;
+                suggestCrops(weather.main.temp, weather.weather[0].main);
+            } catch (error) {
+                document.getElementById('weather-info').innerHTML = '<p>Unable to fetch weather data.</p>';
+            }
+        }
+
+        // Suggest Crops Based on Weather
+        function suggestCrops(temp, condition) {
+            let suggestions = '';
+            if (temp > 25 && condition.includes('Clear')) {
+                suggestions = '<p>Recommended: Cotton, Rice, Sugarcane</p>';
+            } else if (temp > 15 && temp <= 25) {
+                suggestions = '<p>Recommended: Wheat, Barley, Mustard</p>';
+            } else {
+                suggestions = '<p>Recommended: Potatoes, Peas, Carrots</p>';
+            }
+            document.getElementById('crop-suggestions').innerHTML = suggestions;
+        }
+
+        // Mock News Data
+        const newsData = [
+            { title: 'Wheat Prices Surge Due to Demand', excerpt: 'Global demand for wheat has increased...', url: '#' },
+            { title: 'New Farming Techniques Boost Yield', excerpt: 'Innovative methods are helping farmers...', url: '#' },
+            { title: 'Corn Market Faces Challenges', excerpt: 'Supply chain issues are impacting...', url: '#' }
+        ];
+
+        function displayNews() {
+            const newsContainer = document.getElementById('news-container');
+            newsContainer.innerHTML = newsData.map(news => `
+                <div class="bg-white p-4 rounded shadow card">
+                    <h3 class="text-lg font-semibold">${news.title}</h3>
+                    <p>${news.excerpt}</p>
+                    <a href="${news.url}" class="text-green-600 hover:underline">Read More</a>
+                </div>
+            `).join('');
+        }
+
+        // Mock Marketplace Data
+        let marketplaceItems = [
+            { name: 'Wheat', price: 200, image: 'https://images.unsplash.com/photo-1574323347407-f9e1ed53d0f6' },
+            { name: 'Corn', price: 180, image: 'https://images.unsplash.com/photo-1592995709171-2377a661f234' },
+            { name: 'Rice', price: 250, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c' }
+        ];
+
+        function displayMarketplace(items) {
+            const marketplaceContainer = document.getElementById('marketplace-items');
+            marketplaceContainer.innerHTML = items.map(item => `
+                <div class="bg-white p-4 rounded shadow card">
+                    <img src="${item.image}" alt="${item.name}" class="w-full h-40 object-cover rounded mb-4">
+                    <h3 class="text-lg font-semibold">${item.name}</h3>
+                    <p>Price: $${item.price}/ton</p>
+                    <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2">Buy Now</button>
+                </div>
+            `).join('');
+        }
+
+        // Search and Filter Marketplace
+        document.getElementById('crop-search').addEventListener('input', filterMarketplace);
+        document.getElementById('price-filter').addEventListener('input', filterMarketplace);
+
+        function filterMarketplace() {
+            const searchQuery = document.getElementById('crop-search').value.toLowerCase();
+            const maxPrice = document.getElementById('price-filter').value;
+            document.getElementById('price-value').textContent = maxPrice;
+
+            const filteredItems = marketplaceItems.filter(item => 
+                item.name.toLowerCase().includes(searchQuery) && item.price <= maxPrice
+            );
+            displayMarketplace(filteredItems);
+        }
+
+        // Initialize Google Map
+        function initMap() {
+            const map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 28.6139, lng: 77.2090 }, // Default: Delhi
+                zoom: 10
+            });
+        }
+
+        // Load Data
+        fetchWeather();
+        displayNews();
+        displayMarketplace(marketplaceItems);
+    </script>
+
+    <!-- Google Maps API -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
+</body>
+</html>
