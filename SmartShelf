@@ -1,0 +1,1 @@
+This is a crop spoilage prediction system. It uses sensors to detect the environmental condition of the storage area and feed the data to the trained ml model and predict weather spoilage will happen or not
